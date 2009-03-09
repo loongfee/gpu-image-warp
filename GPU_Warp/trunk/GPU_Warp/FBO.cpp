@@ -46,11 +46,11 @@ bool FBO_BUFFER::init(int width, int height, void *imageData)
    //glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rb); 
 
 	//============================================================================
-	// And attach it to the FBO so we can render to it
+	
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, tex, 0);
-	// Attach the depth render buffer to the FBO as its depth attachment
+	
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rb);
-	// Attach the same render buffer to the FBO as its stencil attachment
+	
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rb);
 	//============================================================================
 
