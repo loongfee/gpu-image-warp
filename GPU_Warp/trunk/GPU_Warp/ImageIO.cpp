@@ -104,7 +104,7 @@ bool ImageIO::load(char *fname)
 		cerr << "Error on image loading from file\n";
 		return false;
 	}
-	// get image INFORMATION
+	// get image INFORMATION	
 	root.width = FreeImage_GetWidth(img);
 	root.height = FreeImage_GetHeight(img);
 	pixelSize = FreeImage_GetBPP(img);
@@ -122,25 +122,18 @@ bool ImageIO::load(char *fname)
 		{						
 			root.type = TYPE_RGB_8BPP;
 		}
-	}	
-	// create Image 1D array
-	//GLubyte *data;
-	Pixel *data;
-	if ((data =(Pixel*) malloc( (root.width * root.height) * sizeof(Pixel))) == NULL)
-	{
-		cerr << "malloc failed on Pixel Data\n";
-		return false;
-	}
-	int pnum=0;
+	}		
+
+	GLubyte *data = (GLubyte*) malloc(root.width * root.height * ( sizeof(GLubyte) * 3));
+	unsigned int place=0;
 	for (int i=0; i<(root.height); i++)
 	{
 		for (int j=0; j<(root.width); j++)
-		{
-			FreeImage_GetPixelColor(img,j,i, &aPixel);
-			data[pnum].r = aPixel.rgbRed;
-			data[pnum].g = aPixel.rgbGreen;
-			data[pnum].b = aPixel.rgbBlue;						
-			pnum++;
+		{			
+			FreeImage_GetPixelColor(img,j,i, &aPixel);			
+			data[place++] = (GLubyte) aPixel.rgbRed;			
+			data[place++] = (GLubyte) aPixel.rgbGreen;
+			data[place++] = (GLubyte) aPixel.rgbBlue;
 		}
 	}
 	root.begin = (void*)data;
@@ -174,16 +167,17 @@ bool ImageIO::save(char *fname)
 		return false;
 	}		
 	// create pointer to picture data
-	Pixel *pix;
-	pix = (Pixel*)root.begin;
-
+	GLubyte *data;
+	data = (GLubyte*)root.begin;
+	
+	unsigned int place=0;
 	for( i=0; i < root.height; i++)
 	{
 		for (j=0; j < root.width; j++)
 		{					
-			aPixel.rgbRed   = pix[i*root.width+j].r; // red
-			aPixel.rgbGreen = pix[i*root.width+j].g; // green
-			aPixel.rgbBlue  = pix[i*root.width+j].b; // blue
+			aPixel.rgbRed   = data[place++]; // red
+			aPixel.rgbGreen = data[place++]; // green
+			aPixel.rgbBlue  = data[place++]; // blue
 			FreeImage_SetPixelColor(img,j,i, &aPixel);
 		}
 	}

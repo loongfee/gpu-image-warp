@@ -4,45 +4,44 @@
 #include <windows.h>
 #include <string>
 #include "FilterWarp.h"
+#include <GL/glew.h>
+#include <GL/glut.h>
 #include "ImageIO.h"
 #include "FBO.h"
 #include "cycle.h"
 
 using namespace std;
 
-void Filter_Warp_GPU(char *fname1, char *outFile, float xRot, float yRot, float zRot)
+
+//############################################################################################
+void Filter_Warp_GPU(int* argc, char** argv,char *fname1, char *outFile, float xRot, float yRot, float zRot)
 {
-	FBO_BUFFER fbo;
-	ImageIO img, img2;
-	ticks t1,t2;
-	int width,height;
+	FBO_BUFFER fbo;		// the fbo object for offscreen rendering
+	ImageIO img;		// that image that will be loaded
+	ticks t1,t2;		// for test purposes
 	
-	
+	// initialize the glut ( create hidden window )
+	glutInit(argc, argv);
+	glutInitWindowSize(0, 0);	
+	glutCreateWindow("Filter Warp");
+
 	cout << "Warping " << fname1 << endl;	
-	img.load(fname1);
-	img2.load("2.jpg");
-
-	width = img.getWidth();
-	height = img.getHeight();
-	float vp[16]; 
-	glGetFloatv(GL_VIEWPORT, vp); 
-
+	img.load(fname1);		
 	
-	t1 = getticks();		
-	//fbo.init(img.getWidth(), img.getHeight(), img.getImageData());
+	t1 = getticks();			
 	fbo.init(img.getWidth(), img.getHeight(), NULL);
 	//##########################################################################################
 	glPushAttrib(GL_VIEWPORT_BIT);
-	glViewport(0,0,width,height);
+	glViewport(0,0,img.getWidth(), img.getHeight());
+	gluPerspective(45.0f,(GLfloat)img.getWidth()/(GLfloat)img.getHeight(),0.1f,100.0f);
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// Clear Screen And Depth Buffer
 	glLoadIdentity();
-
 	
 	glTranslatef(0.0f,0.0f,0.0f);
-	glRotatef(45.0f,1.0f,0.0f,0.0f);		//x
-	glRotatef(45.0f,0.0f,1.0f,0.0f);		//y
-	glRotatef(45.0f,0.0f,0.0f,1.0f);		//z
+	glRotatef(xRot,1.0f,0.0f,0.0f);		//	x
+	glRotatef(yRot,0.0f,1.0f,0.0f);		//	y
+	glRotatef(zRot,0.0f,0.0f,1.0f);		//  z
 
 	// create texture and load data to it
 	GLuint tex;
@@ -69,18 +68,23 @@ void Filter_Warp_GPU(char *fname1, char *outFile, float xRot, float yRot, float 
 
 		glTexCoord2f(0.0f, 1.0f);
 		glVertex3f(0.0f, 1.0f, 0.0f);
-	glEnd();
-	// Restore old view port and set rendering back to default frame buffer
+	glEnd();	
 	//glPopAttrib();
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	//##########################################################################################
-	
+	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, img.getImageData());
 	glReadPixels(0,0,img.getWidth(), img.getHeight(), GL_RGB, GL_UNSIGNED_BYTE, img.getImageData());	
 
 	t2 = getticks();
 	img.save(outFile);
+
+	// clear all the memory
 	fbo.clear();
+	glDeleteTextures(1,&tex);
+
+	
 	cout << "Warp ticks " << elapsed(t2,t1) << endl;
 
 }
+//############################################################################################
