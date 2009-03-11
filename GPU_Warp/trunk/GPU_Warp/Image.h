@@ -3,13 +3,7 @@
 
 
 namespace GpuImageProcess
-{
-
-	struct Pixel
-	{
-		unsigned char r,g,b;
-	};
-
+{	
 	/* These are three types of images that we 
 	 * are working with
 	 */

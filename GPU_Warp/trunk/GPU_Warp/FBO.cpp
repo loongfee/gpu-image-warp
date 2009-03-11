@@ -7,57 +7,32 @@ FBO_BUFFER::FBO_BUFFER()
 {
 
 }
-
 //########################################################################
 bool FBO_BUFFER::init(int width, int height, void *imageData)
-{
-   // at first Must to initialize!!!
-   glewInit();
+{	
+	glewInit();
+	glGenFramebuffersEXT(1, &fbo); 
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo); 
 
-	//glEnable(GL_DEPTH_TEST);			
-	//glDepthFunc(GL_LEQUAL);
+	// Init texture 
+	glGenTextures(1, &tex); 
 
-   glGenFramebuffersEXT(1, &fbo); 
-   glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo); 
-
-   // Init texture 
-   glGenTextures(1, &tex); 
-
-   glBindTexture(GL_TEXTURE_2D, tex); 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP); 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP); 
-   glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,width,height,0,GL_RGB,GL_UNSIGNED_BYTE,imageData);
+	glBindTexture(GL_TEXTURE_2D, tex); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP); 
+	glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,width,height,0,GL_RGB,GL_UNSIGNED_BYTE,imageData);
    	   	   	   	
 
-   // Init render buffer (for depth) 
-   glGenRenderbuffersEXT(1, &rb); 
-   glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rb); 
-
-
-
-
-   //glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT32, width, height);     
-   glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_STENCIL_EXT, width, height);     
-   
-   //glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, tex, 0); 
-
-   //glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rb); 
-
-	//============================================================================
-	
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, tex, 0);
-	
-	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rb);
-	
-	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rb);
-	//============================================================================
-
-	
+	 // Init render buffer (for depth) 
+	glGenRenderbuffersEXT(1, &rb); 
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rb);    
+	glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_STENCIL_EXT, width, height);        
+   	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, tex, 0);
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rb);	
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rb);	
 	check();	
-	
-	//glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);		// set main draw color buffer	
 	return true;
 }
 //########################################################################

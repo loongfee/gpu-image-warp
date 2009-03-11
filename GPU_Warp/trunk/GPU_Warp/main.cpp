@@ -1,10 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#include <windows.h>
 #include <string>
-#include <GL/glew.h>
-#include <GL/glut.h>
 #include "FilterWarp.h"
 
 #define MAX_FILE_NAME 255
@@ -14,6 +11,7 @@ using namespace std;
 // file name from arguments
 char f_in[MAX_FILE_NAME];
 char f_out[MAX_FILE_NAME];
+float xRot, yRot, zRot;
 
 //###################################################
 void readArguments(int argc, char **argv);
@@ -22,27 +20,23 @@ void readArguments(int argc, char **argv);
 //###################################################
 int main(int argc, char **argv)
 {
-	readArguments(argc,argv);
-	glutInit(&argc, argv);
-	glutInitWindowSize(0, 0);	
-	glutCreateWindow("Filter Warp");
-
-	Filter_Warp_GPU(f_in,f_out,15,0,0);
-	
-
-
-	exit(EXIT_FAILURE);
+	readArguments(argc,argv);	
+	Filter_Warp_GPU(&argc,argv,f_in,f_out,xRot,yRot,zRot);
+	exit(EXIT_SUCCESS);
 }
-
 //############################################################
 void readArguments(int argc, char **argv)
 {
-	if ( argc!=3 )
+	if ( argc!=6 )
 	{
-		cout << "Usage <input1> <output>\n";
+		cout << "Usage <input1> <output> <x-rotation> <y-rotation> <z-rotation>\n";
 		exit(EXIT_FAILURE);
 	}
-	strcpy(f_in,argv[1]);	
-	strcpy(f_out,argv[2]);
+	
+	strcpy_s(f_in,argv[1]);
+	strcpy_s(f_out,argv[2]);	
+	xRot = (float) atof(argv[3]);
+	yRot = (float) atof(argv[4]);
+	zRot = (float) atof(argv[5]);	
 }
-
+//############################################################
