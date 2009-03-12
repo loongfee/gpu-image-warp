@@ -17,9 +17,10 @@ public:
 	void setHeight(int h);
 	bool load(char *fname);
 	bool save(char *fname);
+	static bool load(const char *fname,GpuImageProcess::Image& image);
 
 	~ImageIO();
-private:
+
 	struct GpuImageProcess::Image root;
 };
 #endif

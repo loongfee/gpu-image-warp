@@ -76,6 +76,7 @@ void ImageIO::setWidth(int w)
 }
 /***************************************************
 ****************************************************/
+
 bool ImageIO::load(char *fname)
 {
 	FIBITMAP *img;									// FreeImage type	
@@ -197,4 +198,72 @@ ImageIO::~ImageIO()
 	{
 		delete(root.begin);
 	}
+}
+
+/***************************************************
+****************************************************/
+
+bool ImageIO::load(const char *fname,GpuImageProcess::Image& image)
+{
+	FIBITMAP *img;									// FreeImage type	
+	FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;			// by default image format is unknown
+	unsigned pixelSize;								// size of each pixel
+	FREE_IMAGE_TYPE imageType;						// type of image
+	RGBQUAD aPixel;
+	
+
+	// try to define image format
+	fif = FreeImage_GetFileType(fname,0);	// second parameter unused !
+	if ( fif == FIF_UNKNOWN )
+	{
+		// try to guess image format from it's file name
+		fif = FreeImage_GetFIFFromFilename(fname);
+		if (fif == FIF_UNKNOWN)
+		{
+			cerr <<"Image format unknown\n";
+			return false;
+		}
+	}
+
+	// load image
+	if ((img = FreeImage_Load(fif, fname, 0)) == NULL)
+	{
+		cerr << "Error on image loading from file\n";
+		return false;
+	}
+	// get image INFORMATION	
+	image.width = FreeImage_GetWidth(img);
+	image.height = FreeImage_GetHeight(img);
+	pixelSize = FreeImage_GetBPP(img);
+	imageType = FreeImage_GetImageType(img);
+
+	if ( image.width <=0 || image.height <=0 )
+	{
+		cerr << "Image dimensions are negetive or zero\n";
+		return false;
+	}
+	// define image format
+	if ( imageType == FIT_BITMAP )
+	{
+		if ( pixelSize == 24 )
+		{						
+			image.type = TYPE_RGB_8BPP;
+		}
+	}		
+
+	GLubyte *data = (GLubyte*) malloc(image.width * image.height * ( sizeof(GLubyte) * 3));
+	unsigned int place=0;
+	for (int i=0; i<(image.height); i++)
+	{
+		for (int j=0; j<(image.width); j++)
+		{			
+			FreeImage_GetPixelColor(img,j,i, &aPixel);			
+			data[place++] = (GLubyte) aPixel.rgbRed;			
+			data[place++] = (GLubyte) aPixel.rgbGreen;
+			data[place++] = (GLubyte) aPixel.rgbBlue;
+		}
+	}
+	image.begin = (void*)data;
+	
+	return true;
 }
