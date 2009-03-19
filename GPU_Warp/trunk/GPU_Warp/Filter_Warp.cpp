@@ -14,7 +14,8 @@
 using namespace std;
 using namespace GpuImageProcess;
 
-
+//############################################################################################
+void checkErrors();
 //############################################################################################
 void Filter_Warp_GPU(GpuImageProcess::Image& image, char *outFile, float xRot, float yRot, float zRot)
 {
@@ -50,6 +51,7 @@ void Filter_Warp_GPU(GpuImageProcess::Image& image, char *outFile, float xRot, f
 		fbo.init(image.width, image.height, NULL, 24);
 	else if ( image.type == TYPE_UC_8BPP) // 8
 		fbo.init(image.width, image.height, NULL, 8);	
+	checkErrors();
 	//##########################################################################################
 	glPushAttrib(GL_VIEWPORT_BIT);
 	glViewport(0,0,image.width, image.height);
@@ -74,12 +76,13 @@ void Filter_Warp_GPU(GpuImageProcess::Image& image, char *outFile, float xRot, f
 		glTexImage2D(GL_TEXTURE_2D, 0, 3, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image.begin);		
 	else if ( image.type == TYPE_FLOAT_32BPP)	//32
 		glTexImage2D(GL_TEXTURE_2D, 0, 1, image.width, image.height, 0, GL_RED , GL_FLOAT, image.begin);
-
+	checkErrors();
 	
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+	checkErrors();
 
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, tex);
@@ -106,6 +109,7 @@ void Filter_Warp_GPU(GpuImageProcess::Image& image, char *outFile, float xRot, f
 		glReadPixels(0,0,image.width, image.height, GL_RGB, GL_UNSIGNED_BYTE, image.begin);
 	if ( image.type == TYPE_UC_8BPP) // 8
 		glReadPixels(0,0,image.width, image.height, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, image.begin);
+	checkErrors();
 	//##########################################################################################
 	t2 = getticks();
 	img.save(outFile,image);
@@ -116,4 +120,50 @@ void Filter_Warp_GPU(GpuImageProcess::Image& image, char *outFile, float xRot, f
 	cout << "Warp ticks " << elapsed(t2,t1) << endl;
 
 }
-//############################################################################################
+/*******************************************
+ * Check for OpenGL errors
+ *******************************************/
+void checkErrors()
+{
+	GLenum err;
+
+	err = glGetError();
+
+	switch ( err )
+	{
+		case GL_NO_ERROR:
+		{
+			break;
+		}
+		case GL_INVALID_ENUM:
+		{
+			cerr << "OpenGL Error: GL_INVALID_ENUM\n";
+			break;
+		}
+		case GL_INVALID_VALUE:
+		{
+			cerr << "OpenGL Error: GL_INVALID_VALUE\n";
+			break;
+		}
+		case GL_INVALID_OPERATION:
+		{
+			cerr << "OpenGL Error: GL_INVALID_OPERATION\n";
+			break;
+		}
+		case GL_STACK_OVERFLOW:
+		{
+			cerr << "OpenGL Error: GL_STACK_OVERFLOW\n";
+			break;
+		}
+		case GL_STACK_UNDERFLOW:
+		{
+			cerr << "OpenGL Error: GL_STACK_UNDERFLOW\n";
+			break;
+		}
+		case GL_OUT_OF_MEMORY:
+		{
+			cerr << "OpenGL Error: GL_OUT_OF_MEMORY\n";
+			break;
+		}
+	}
+}

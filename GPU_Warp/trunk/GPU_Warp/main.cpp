@@ -26,6 +26,10 @@ int main(int argc, char **argv)
 	GpuImageProcess::Image image;
 	ImageIO::load(f_in,image);		
 
+	/*ImageIO::load("imUC8.tif",image);
+	ImageIO::save("float32.tif", image);
+	exit(EXIT_SUCCESS);*/
+
 	Filter_Warp_GPU(image,f_out,xRot,yRot,zRot);
 
 	exit(EXIT_SUCCESS);
