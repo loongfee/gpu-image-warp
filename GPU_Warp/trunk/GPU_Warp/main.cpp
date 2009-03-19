@@ -24,8 +24,10 @@ int main(int argc, char **argv)
 	
 	readArguments(argc,argv);	
 	GpuImageProcess::Image image;
-	ImageIO::load(f_in,image);
+	ImageIO::load(f_in,image);		
+
 	Filter_Warp_GPU(image,f_out,xRot,yRot,zRot);
+
 	exit(EXIT_SUCCESS);
 }
 //############################################################

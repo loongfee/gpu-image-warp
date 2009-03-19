@@ -10,9 +10,10 @@
 
 class FBO_BUFFER
 {
+	
 public:
 	FBO_BUFFER();
-	bool init(int width, int height, void *imageData);
+	bool init(int width, int height, void *imageData, unsigned char draw_format );
 	void clear();
 
 	~FBO_BUFFER();

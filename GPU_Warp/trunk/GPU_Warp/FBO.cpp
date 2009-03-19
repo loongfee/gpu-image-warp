@@ -8,8 +8,8 @@ FBO_BUFFER::FBO_BUFFER()
 
 }
 //########################################################################
-bool FBO_BUFFER::init(int width, int height, void *imageData)
-{	
+bool FBO_BUFFER::init(int width, int height, void *imageData, unsigned char draw_format)
+{		
 	glewInit();
 	glGenFramebuffersEXT(1, &fbo); 
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo); 
@@ -22,8 +22,14 @@ bool FBO_BUFFER::init(int width, int height, void *imageData)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP); 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP); 
-	glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,width,height,0,GL_RGB,GL_UNSIGNED_BYTE,imageData);
-   	   	   	   	
+
+	if ( draw_format == 8)
+		glTexImage2D(GL_TEXTURE_2D,0,1,width,height,0,GL_COLOR_INDEX,GL_UNSIGNED_BYTE,imageData);
+	else if ( draw_format == 24)
+		glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,width,height,0,GL_RGB,GL_UNSIGNED_BYTE,imageData);
+	else if ( draw_format == 32)
+		glTexImage2D(GL_TEXTURE_2D,0,1,width,height,0,GL_RED,GL_FLOAT,imageData);
+ 	   	   	   	
 
 	 // Init render buffer (for depth) 
 	glGenRenderbuffersEXT(1, &rb); 
