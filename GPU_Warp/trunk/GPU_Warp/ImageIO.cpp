@@ -76,139 +76,13 @@ void ImageIO::setWidth(int w)
 }
 /***************************************************
 ****************************************************/
-
-bool ImageIO::load(char *fname)
-{
-	FIBITMAP *img;									// FreeImage type	
-	FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;			// by default image format is unknown
-	unsigned pixelSize;								// size of each pixel
-	FREE_IMAGE_TYPE imageType;						// type of image
-	RGBQUAD aPixel;
-	
-
-	// try to define image format
-	fif = FreeImage_GetFileType(fname,0);	// second parameter unused !
-	if ( fif == FIF_UNKNOWN )
-	{
-		// try to guess image format from it's file name
-		fif = FreeImage_GetFIFFromFilename(fname);
-		if (fif == FIF_UNKNOWN)
-		{
-			cerr <<"Image format unknown\n";
-			return false;
-		}
-	}
-
-	// load image
-	if ((img = FreeImage_Load(fif, fname, 0)) == NULL)
-	{
-		cerr << "Error on image loading from file\n";
-		return false;
-	}
-	// get image INFORMATION	
-	root.width = FreeImage_GetWidth(img);
-	root.height = FreeImage_GetHeight(img);
-	pixelSize = FreeImage_GetBPP(img);
-	imageType = FreeImage_GetImageType(img);
-
-	if ( root.width <=0 || root.height <=0 )
-	{
-		cerr << "Image dimensions are negetive or zero\n";
-		return false;
-	}
-	// define image format
-	if ( imageType == FIT_BITMAP )
-	{
-		if ( pixelSize == 24 )
-		{						
-			root.type = TYPE_RGB_8BPP;
-		}
-	}		
-
-	GLubyte *data = (GLubyte*) malloc(root.width * root.height * ( sizeof(GLubyte) * 3));
-	unsigned int place=0;
-	for (int i=0; i<(root.height); i++)
-	{
-		for (int j=0; j<(root.width); j++)
-		{			
-			FreeImage_GetPixelColor(img,j,i, &aPixel);			
-			data[place++] = (GLubyte) aPixel.rgbRed;			
-			data[place++] = (GLubyte) aPixel.rgbGreen;
-			data[place++] = (GLubyte) aPixel.rgbBlue;
-		}
-	}
-	root.begin = (void*)data;
-	
-	return true;
-}
-/***************************************************
-****************************************************/
-bool ImageIO::save(char *fname)
-{
-	FIBITMAP *img;
-	RGBQUAD aPixel;
-	FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;			// by default image format is unknown
-	int i,j;
-
-	fif = FreeImage_GetFIFFromFilename(fname);
-	if (fif == FIF_UNKNOWN)
-	{
-		cerr <<"Wrong image format or unsupported\n";
-		return false;
-	}
-	if ( root.width < 0 || root.height < 0 )
-	{
-		cerr << "Image dimensions incorrect\n";
-		return false;
-	}
-	img = FreeImage_Allocate(root.width, root.height,24,0,0,0);
-	if (img == NULL || root.begin== NULL)
-	{
-		cerr << "Error on allocating memory for image\n";
-		return false;
-	}		
-	// create pointer to picture data
-	GLubyte *data;
-	data = (GLubyte*)root.begin;
-	
-	unsigned int place=0;
-	for( i=0; i < root.height; i++)
-	{
-		for (j=0; j < root.width; j++)
-		{					
-			aPixel.rgbRed   = data[place++]; // red
-			aPixel.rgbGreen = data[place++]; // green
-			aPixel.rgbBlue  = data[place++]; // blue
-			FreeImage_SetPixelColor(img,j,i, &aPixel);
-		}
-	}
-	if (!FreeImage_Save(fif,img,fname,0))
-	{
-		cerr << "Error on saving image\n";
-		return false;
-	}
-	FreeImage_Unload(img);
-	return true;
-}
-/***************************************************
-****************************************************/
-ImageIO::~ImageIO()
-{
-	if ( root.begin != NULL)
-	{
-		delete(root.begin);
-	}
-}
-
-/***************************************************
-****************************************************/
-
 bool ImageIO::load(const char *fname,GpuImageProcess::Image& image)
 {
 	FIBITMAP *img;									// FreeImage type	
 	FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;			// by default image format is unknown
-	unsigned pixelSize;								// size of each pixel
+	unsigned int pixelSize;							// size of each pixel
 	FREE_IMAGE_TYPE imageType;						// type of image
+	FREE_IMAGE_COLOR_TYPE colorType;				// color type 
 	RGBQUAD aPixel;
 	
 
@@ -234,36 +108,181 @@ bool ImageIO::load(const char *fname,GpuImageProcess::Image& image)
 	// get image INFORMATION	
 	image.width = FreeImage_GetWidth(img);
 	image.height = FreeImage_GetHeight(img);
-	pixelSize = FreeImage_GetBPP(img);
-	imageType = FreeImage_GetImageType(img);
-
+	pixelSize = FreeImage_GetBPP(img);			// bytes per pixel
+	imageType = FreeImage_GetImageType(img);	// image  type 
+	colorType = FreeImage_GetColorType(img);	//page 26
+	
 	if ( image.width <=0 || image.height <=0 )
 	{
 		cerr << "Image dimensions are negetive or zero\n";
 		return false;
 	}
-	// define image format
-	if ( imageType == FIT_BITMAP )
+	
+	//################################## 8 BIT for pixel ###########################################
+	if ( imageType == FIT_BITMAP && pixelSize == 8  )
 	{
-		if ( pixelSize == 24 )
-		{						
-			image.type = TYPE_RGB_8BPP;
+		image.type = TYPE_UC_8BPP;
+		unsigned char *data = (unsigned char*) malloc(image.width * image.height * ( sizeof(unsigned char)));
+		unsigned int place=0;
+		unsigned char *line;		
+		for(int y = 0; y < (image.height); y++) 
+		{
+			line = (BYTE *)FreeImage_GetScanLine(img, y);								
+			for(int x = 0; x < image.width; x++) 
+			{					
+				data[place] = line[x];
+				place++;
+			}
+		}						
+		image.begin = (void*)data;	
+		return true;
+	}
+	//################################## 24 BIT for pixel RGB #######################################
+	else if ( imageType == FIT_BITMAP && pixelSize == 24 || pixelSize == 32 )
+	{						
+		image.type = TYPE_RGB_8BPP;
+		unsigned char *data = (unsigned char*) malloc(image.width * image.height * ( sizeof(unsigned char) * 3));
+		unsigned int place=0;
+		for (int i=0; i<(image.height); i++)
+		{
+			for (int j=0; j<(image.width); j++)
+			{			
+				FreeImage_GetPixelColor(img,j,i, &aPixel);			
+				data[place++] = (GLubyte) aPixel.rgbRed;			
+				data[place++] = (GLubyte) aPixel.rgbGreen;
+				data[place++] = (GLubyte) aPixel.rgbBlue;
+			}
 		}
+		image.begin = (void*)data;	
+		return true;
+	}	
+	//################################## 32 BIT for pixel FLOAT #######################################
+	else if ( imageType == FIT_FLOAT && pixelSize == 32)
+	{		
+		image.type = TYPE_FLOAT_32BPP;
+		float *data = (float*) malloc(image.width * image.height * (sizeof(float)));
+		int place=0;
+		BYTE *line;
+		for (int i=0; i<(image.height); i++)
+		{
+			line = FreeImage_GetScanLine(img,i);
+			for (int j=0; j<(image.width); j++)
+			{			
+				data[place] = line[j];
+				place++;
+			}
+		}		
+		image.begin = (void*)data;
+		return true;
+	}
+	cerr << "This image type can't be handled\n";
+	return false;
+}
+/***************************************************
+****************************************************/
+bool ImageIO::save(char *fname, GpuImageProcess::Image& image)
+{
+	FIBITMAP *img;
+	RGBQUAD aPixel;
+	FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;			// by default image format is unknown
+	int i,j;
+
+	fif = FreeImage_GetFIFFromFilename(fname);
+	if (fif == FIF_UNKNOWN)
+	{
+		cerr <<"Wrong image format or unsupported\n";
+		return false;
+	}
+	if (image.begin== NULL)
+	{
+		cerr << "Error on allocating memory for image\n";
+		return false;
 	}		
 
-	GLubyte *data = (GLubyte*) malloc(image.width * image.height * ( sizeof(GLubyte) * 3));
-	unsigned int place=0;
-	for (int i=0; i<(image.height); i++)
+	
+	if ( image.width < 0 || image.height < 0 )
 	{
-		for (int j=0; j<(image.width); j++)
-		{			
-			FreeImage_GetPixelColor(img,j,i, &aPixel);			
-			data[place++] = (GLubyte) aPixel.rgbRed;			
-			data[place++] = (GLubyte) aPixel.rgbGreen;
-			data[place++] = (GLubyte) aPixel.rgbBlue;
+		cerr << "Image dimensions incorrect\n";
+		return false;
+	}
+
+	unsigned int place=0;
+	//################################## 8 BIT for pixel ###########################################
+	if ( image.type == TYPE_UC_8BPP)
+	{
+		unsigned char *data = (unsigned char*)image.begin;
+		img = FreeImage_AllocateT(FIT_BITMAP,image.width, image.height,8);
+
+		FIBITMAP* temp = img;
+		img = FreeImage_ConvertTo8Bits(img);		
+		FreeImage_Unload(temp);	
+
+		BYTE *line;					
+		for (i=0; i<image.height; i++)
+		{				
+			line = FreeImage_GetScanLine(img, i);
+			for (j=0; j<image.width; j++)
+			{
+				line[j] = data[place];
+				place++;
+			}
 		}
 	}
-	image.begin = (void*)data;
-	
+	//################################## 24 BIT for pixel RGB #######################################
+	else if ( image.type == TYPE_RGB_8BPP)
+	{
+		unsigned char *data = (unsigned char*)image.begin;
+		img = FreeImage_Allocate(image.width, image.height,24);
+
+		for( i=0; i < image.height; i++)
+		{
+			for (j=0; j< image.width; j++)
+			{			
+				aPixel.rgbRed   = data[place++]; // red
+				aPixel.rgbGreen = data[place++]; // green
+				aPixel.rgbBlue  = data[place++]; // blue
+				FreeImage_SetPixelColor(img,j,i, &aPixel);
+			}
+		}
+	}
+	//################################## 24 BIT for pixel RGB #######################################
+	else if ( image.type == TYPE_FLOAT_32BPP)
+	{
+		float *data = (float*)image.begin;
+		img = FreeImage_AllocateT(FIT_BITMAP,image.width, image.height,32);
+		
+		BYTE *line;
+		for( i=0; i < image.height; i++)
+		{
+			line = FreeImage_GetScanLine(img, i);
+			for (j=0; j<image.width; j++)
+			{
+				line[j] = data[place];
+				place++;
+			}
+		}
+	}
+	else
+	{
+		cerr << "image of unknown type\n";
+		return false;
+	}
+	// save the image			
+	if (!FreeImage_Save(fif,img,fname,0))
+	{
+		cerr << "Error on saving image\n";
+		return false;
+	}
+	FreeImage_Unload(img);
 	return true;
+}
+/***************************************************
+* Destructor
+****************************************************/
+ImageIO::~ImageIO()
+{
+	if ( root.begin != NULL)
+	{
+		delete(root.begin);
+	}
 }

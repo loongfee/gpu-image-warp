@@ -10,7 +10,9 @@
 #include "FBO.h"
 #include "cycle.h"
 
+
 using namespace std;
+using namespace GpuImageProcess;
 
 
 //############################################################################################
@@ -18,7 +20,7 @@ void Filter_Warp_GPU(GpuImageProcess::Image& image, char *outFile, float xRot, f
 {
 	FBO_BUFFER fbo;		// the fbo object for offscreen rendering
 	ImageIO img;		// that image that will be loaded
-	GpuImageProcess::Image outImage;
+	
 	ticks t1,t2;		// for test purposes
 	
 	// create dummy argc and argv
@@ -31,11 +33,23 @@ void Filter_Warp_GPU(GpuImageProcess::Image& image, char *outFile, float xRot, f
 	glutInitWindowSize(0, 0);	
 	glutCreateWindow("Filter Warp");
 
+	
+	// get the image type and send it to fbo
+	if ( image.type == TYPE_UNKNOW)
+	{
+		cerr << "Recieved unknown image type\tTerminating\n";
+		exit(EXIT_FAILURE);
+	}
 	cout << "Warping "  << endl;	
 	
 	
 	t1 = getticks();			
-	fbo.init(image.width, image.height, NULL);
+	if ( image.type == TYPE_FLOAT_32BPP)	//32
+		fbo.init(image.width, image.height, NULL, 32);
+	else if ( image.type == TYPE_RGB_8BPP)	//24
+		fbo.init(image.width, image.height, NULL, 24);
+	else if ( image.type == TYPE_UC_8BPP) // 8
+		fbo.init(image.width, image.height, NULL, 8);	
 	//##########################################################################################
 	glPushAttrib(GL_VIEWPORT_BIT);
 	glViewport(0,0,image.width, image.height);
@@ -53,7 +67,15 @@ void Filter_Warp_GPU(GpuImageProcess::Image& image, char *outFile, float xRot, f
 	GLuint tex;
 	glGenTextures(1,&tex);
 	glBindTexture(GL_TEXTURE_2D, tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, 3, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image.begin);
+	
+	if ( image.type == TYPE_UC_8BPP)			// 8
+		glTexImage2D(GL_TEXTURE_2D, 0, 1, image.width, image.height, 0, GL_COLOR_INDEX , GL_UNSIGNED_BYTE, image.begin);
+	else if ( image.type == TYPE_RGB_8BPP)		//24	
+		glTexImage2D(GL_TEXTURE_2D, 0, 3, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image.begin);		
+	else if ( image.type == TYPE_FLOAT_32BPP)	//32
+		glTexImage2D(GL_TEXTURE_2D, 0, 1, image.width, image.height, 0, GL_RED , GL_FLOAT, image.begin);
+
+	
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
@@ -75,26 +97,22 @@ void Filter_Warp_GPU(GpuImageProcess::Image& image, char *outFile, float xRot, f
 		glTexCoord2f(0.0f, 1.0f);
 		glVertex3f(-1.0f, 1.0f, 0.0f);
 	glEnd();	
-	//glPopAttrib();
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
+	//##########################################################################################	
+	if ( image.type == TYPE_FLOAT_32BPP)	//32
+		glReadPixels(0,0,image.width, image.height, GL_RED, GL_FLOAT, image.begin);
+	if ( image.type == TYPE_RGB_8BPP)	//24
+		glReadPixels(0,0,image.width, image.height, GL_RGB, GL_UNSIGNED_BYTE, image.begin);
+	if ( image.type == TYPE_UC_8BPP) // 8
+		glReadPixels(0,0,image.width, image.height, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, image.begin);
 	//##########################################################################################
-	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, img.getImageData());
-
-	outImage = image;
-	outImage.begin = malloc(outImage.height*outImage.width* sizeof(GLubyte) * 3);
-
-	glReadPixels(0,0,image.width, image.height, GL_RGB, GL_UNSIGNED_BYTE, outImage.begin);	
-
 	t2 = getticks();
-	img.root = outImage;
-	img.save(outFile);
+	img.save(outFile,image);
 
 	// clear all the memory
 	fbo.clear();
 	glDeleteTextures(1,&tex);
-
-	
 	cout << "Warp ticks " << elapsed(t2,t1) << endl;
 
 }

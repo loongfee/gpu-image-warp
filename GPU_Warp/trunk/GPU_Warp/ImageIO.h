@@ -16,8 +16,8 @@ public:
 	void setWidth(int w);
 	void setHeight(int h);
 	bool load(char *fname);
-	bool save(char *fname);
-	static bool load(const char *fname,GpuImageProcess::Image& image);
+	static bool save(char *fname, GpuImageProcess::Image& image);
+	static bool load(const char *fname, GpuImageProcess::Image& image);
 
 	~ImageIO();
 
