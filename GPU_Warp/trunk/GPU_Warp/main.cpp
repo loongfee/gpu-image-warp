@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#include <string>
+
 #include "FilterWarp.h"
 #include "ImageIO.h"
 
 #define MAX_FILE_NAME 255
 
-using namespace std;
 
 // file name from arguments
 char f_in[MAX_FILE_NAME];
@@ -23,15 +22,26 @@ int main(int argc, char **argv)
 {
 	
 	readArguments(argc,argv);	
-	GpuImageProcess::Image image;
-	ImageIO::load(f_in,image);		
+	GpuImageProcess::Image image, outImage;
+	GpuImageProcess::FilterWarp warp;
+	ImageIO::load(f_in,image);	
 
-	/*ImageIO::load("imUC8.tif",image);
-	ImageIO::save("float32.tif", image);
-	exit(EXIT_SUCCESS);*/
+	if (image.type == GpuImageProcess::TYPE_FLOAT_32BPP)
+		ImageIO::clamp(image);
+	
+	warp.Init();
+	warp.Warp(image,outImage,xRot,yRot,zRot,0.0f,0.0f,0.0f);
 
-	Filter_Warp_GPU(image,f_out,xRot,yRot,zRot);
-
+	if (outImage.type == GpuImageProcess::TYPE_FLOAT_32BPP)
+	{
+		GpuImageProcess::Image ucImage;
+		ImageIO::floatToUc(outImage,ucImage);
+		ImageIO::save(f_out,ucImage);
+	}
+	else
+	{
+		ImageIO::save(f_out,outImage);
+	}
 	exit(EXIT_SUCCESS);
 }
 //############################################################
@@ -39,10 +49,9 @@ void readArguments(int argc, char **argv)
 {
 	if ( argc!=6 )
 	{
-		cout << "Usage <input1> <output> <x-rotation> <y-rotation> <z-rotation>\n";
+		std::cout << "Usage <input1> <output> <x-rotation> <y-rotation> <z-rotation>\n";
 		exit(EXIT_FAILURE);
-	}
-	
+	}	
 	strcpy_s(f_in,argv[1]);
 	strcpy_s(f_out,argv[2]);	
 	xRot = (float) atof(argv[3]);

@@ -7,17 +7,11 @@ class ImageIO
 {
 public:
 	ImageIO();
-	int getWidth();				// get image width
-	int getHeight();			
-	int getType();
-	void *getImageData();		// return pointer to image data
-
-	void setType(int t);
-	void setWidth(int w);
-	void setHeight(int h);
-	bool load(char *fname);
+	
 	static bool save(char *fname, GpuImageProcess::Image& image);
 	static bool load(const char *fname, GpuImageProcess::Image& image);
+	static bool clamp( GpuImageProcess::Image& floatimage);
+	static bool floatToUc(const GpuImageProcess::Image& floatimage, GpuImageProcess::Image& ucimage);
 
 	~ImageIO();
 
